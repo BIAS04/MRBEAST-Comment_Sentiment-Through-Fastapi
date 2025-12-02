@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Classifier - macOS Style</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-image: url('https://4kwallpapers.com/images/wallpapers/macos-monterey-stock-purple-dark-mode-layers-5k-4480x2520-5898.jpg');
+            --window-bg: rgba(30, 30, 30, 0.65);
+            --window-border: rgba(255, 255, 255, 0.15);
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --input-bg: rgba(0, 0, 0, 0.25);
+            --panel-bg: rgba(0, 0, 0, 0.2);
+            --title-bar-bg: rgba(0, 0, 0, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            /* Light Theme */
+            --bg-image: url('https://4kwallpapers.com/images/wallpapers/macos-monterey-stock-white-light-mode-layers-5k-4480x2520-5897.jpg');
+            --window-bg: rgba(255, 255, 255, 0.65);
+            --window-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --input-bg: rgba(255, 255, 255, 0.5);
+            --panel-bg: rgba(255, 255, 255, 0.3);
+            --title-bar-bg: rgba(255, 255, 255, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.15);
+        }
+
+        /* macOS System Font Stack */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-image) no-repeat center center fixed; 
+            background-size: cover;
+            overflow: hidden;
+            transition: background 0.5s ease;
+            color: var(--text-main);
+        }
+
+        /* Glassmorphism Window */
+        .mac-window {
+            background: var(--window-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--window-border);
+            box-shadow: 0 25px 50px -12px var(--shadow-color);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            animation: openWindow 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .mac-window.maximized {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            border-radius: 0;
+            top: 0;
+            left: 0;
+        }
+
+        .mac-window.minimized {
+            height: 40px !important;
+            overflow: hidden;
+        }
+
+        @keyframes openWindow {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Traffic Lights */
+        .traffic-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .traffic-light:active { transform: scale(0.9); }
+        .close { background-color: #ff5f56; }
+        .minimize { background-color: #ffbd2e; }
+        .maximize { background-color: #27c93f; }
+
+        /* Themed UI Elements */
+        .theme-panel {
+            background: var(--panel-bg);
+        }
+        
+        .theme-text-muted {
+            color: var(--text-muted);
+        }
+
+        /* iOS/macOS Style Toggle */
+        .mac-radio:checked + div {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid #007AFF;
+            color: #007AFF;
+            box-shadow: 0 0 10px rgba(0, 122, 255, 0.2);
+            font-weight: 600;
+        }
+        [data-theme="light"] .mac-radio:checked + div {
+             background: #ffffff;
+        }
+
+        /* Smooth Input */
+        .mac-input {
+            background: var(--input-bg);
+            border: 1px solid var(--window-border);
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+        .mac-input:focus {
+            background: var(--input-bg);
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
+            outline: none;
+        }
+        .mac-input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        /* Apple Blue Button */
+        .mac-btn {
+            background: linear-gradient(180deg, #007AFF 0%, #0062cc 100%);
+            transition: transform 0.1s ease, filter 0.2s;
+            color: white; /* Always white text on blue button */
+        }
+        .mac-btn:active {
+            transform: scale(0.98);
+            filter: brightness(0.9);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle-btn {
+            color: var(--text-muted);
+            transition: color 0.2s, transform 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            color: var(--text-main);
+            transform: rotate(15deg);
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .loader {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid #fff;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toast {
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.3s;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-8 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 bg-black/70 backdrop-blur-md border border-white/10 px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 text-white">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        <span id="toastMsg" class="text-sm font-medium">Notification</span>
+    </div>
+
+    <!-- Main Application Window -->
+    <div id="appWindow" class="mac-window w-full max-w-2xl rounded-xl relative z-10 flex flex-col h-[600px] overflow-hidden">
+        
+        <!-- Simulation Badge -->
+        <div id="simBadge" class="hidden absolute top-12 right-0 bg-yellow-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-l shadow-md backdrop-blur-md z-50">
+            SIMULATION MODE
+        </div>
+
+        <!-- Window Title Bar -->
+        <div class="h-10 flex items-center px-4 border-b border-white/10 shrink-0 select-none" style="background: var(--title-bar-bg);" ondblclick="toggleMaximize()">
+            <div class="flex gap-2 group w-16">
+                <div onclick="resetApp()" title="Reset App" class="traffic-light close group-hover:after:content-['x'] group-hover:after:text-black/50 group-hover:after:flex group-hover:after:justify-center group-hover:after:items-center group-hover:after:h-full group-hover:after:text-[8px]"></div>
+                <div onclick="toggleMinimize()" title="Minimize" class="traffic-light minimize group-hover:after:content-['-'] group-hover:after:text-black/50 group-hover:after:flex group-hover:after:justify-center group-hover:after:items-center group-hover:after:h-full group-hover:after:text-[10px]"></div>
+                <div onclick="toggleMaximize()" title="Maximize" class="traffic-light maximize group-hover:after:content-['+'] group-hover:after:text-black/50 group-hover:after:flex group-hover:after:justify-center group-hover:after:items-center group-hover:after:h-full group-hover:after:text-[8px]"></div>
+            </div>
+            <div class="flex-1 text-center text-sm font-medium theme-text-muted opacity-80">Sentiment Analyzer Pro</div>
+            <div class="w-16 flex justify-end">
+                <button onclick="toggleTheme()" class="theme-toggle-btn focus:outline-none" title="Toggle Dark/Light Mode">
+                    <i id="themeIcon" class="fas fa-moon"></i>
+                </button>
+            </div> 
+        </div>
+
+        <!-- App Content -->
+        <div id="windowBody" class="flex-1 p-8 overflow-y-auto flex flex-col transition-opacity duration-300">
+            
+            <div class="text-center mb-6">
+                <div class="inline-block p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg mb-3">
+                    <i class="fas fa-brain text-2xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight">AI Analysis</h1>
+                <p class="theme-text-muted text-sm mt-1">Select a model to process your text</p>
+            </div>
+
+            <div class="space-y-5 flex-1 flex flex-col">
+                
+                <!-- Text Input -->
+                <div class="flex-1">
+                    <textarea id="inputText" 
+                        class="mac-input w-full h-full min-h-[120px] rounded-lg p-4 resize-none text-base"
+                        placeholder="Paste comment or review here..."></textarea>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="theme-panel p-1 rounded-lg grid grid-cols-2 gap-1">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="modelType" value="lr" checked class="mac-radio sr-only">
+                        <div class="rounded-md py-1.5 text-center text-sm font-medium theme-text-muted hover:text-blue-500 transition-all duration-200">
+                            Logistic Regression
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="modelType" value="nb" class="mac-radio sr-only">
+                        <div class="rounded-md py-1.5 text-center text-sm font-medium theme-text-muted hover:text-blue-500 transition-all duration-200">
+                            Naive Bayes
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="analyzeText()" id="analyzeBtn"
+                    class="mac-btn w-full font-medium py-2.5 rounded-lg shadow-lg flex items-center justify-center gap-2 text-sm">
+                    <span>Run Analysis</span>
+                </button>
+
+                <!-- Warning Message -->
+                <div id="simMessage" class="hidden p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs flex items-center gap-2">
+                    <i class="fas fa-wifi"></i>
+                    <span>Backend unavailable. Running simulation.</span>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-xs text-center"></div>
+
+                <!-- Result Section -->
+                <div id="resultSection" class="hidden mt-2 p-4 border border-white/10 rounded-xl backdrop-blur-md fade-in theme-panel">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-semibold theme-text-muted uppercase tracking-wider">Result</span>
+                        <span id="modelUsedDisplay" class="text-[10px] bg-black/10 px-2 py-0.5 rounded theme-text-muted">--</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div id="predictionDisplay" class="text-xl font-bold">--</div>
+                        <div class="text-right">
+                            <div class="text-xs theme-text-muted mb-1">Confidence</div>
+                            <div class="text-sm font-mono font-medium" id="confidenceValue">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full bg-gray-500/20 rounded-full h-1.5 mt-3 overflow-hidden">
+                        <div id="confidenceBar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+        <!-- Bottom Status Bar -->
+        <div class="h-6 border-t border-white/10 flex items-center px-3 justify-between text-[10px] theme-text-muted" style="background: var(--title-bar-bg);">
+            <span>Ready</span>
+            <span>v1.0.3</span>
+        </div>
+    </div>
+
+    <script>
+        // --- Theme Logic ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.removeAttribute('data-theme');
+                icon.className = 'fas fa-moon';
+                showToast("Dark Mode Enabled");
+            } else {
+                html.setAttribute('data-theme', 'light');
+                icon.className = 'fas fa-sun text-yellow-500';
+                showToast("Light Mode Enabled");
+            }
+        }
+
+        // --- Button Functions ---
+
+        function resetApp() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('simMessage').classList.add('hidden');
+            document.getElementById('simBadge').classList.add('hidden');
+            showToast("Application Reset");
+        }
+
+        function toggleMinimize() {
+            const win = document.getElementById('appWindow');
+            win.classList.toggle('minimized');
+        }
+
+        function toggleMaximize() {
+            const win = document.getElementById('appWindow');
+            win.classList.toggle('maximized');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const msgSpan = document.getElementById('toastMsg');
+            msgSpan.textContent = message;
+            
+            toast.style.transform = "translate(-50%, 0)";
+            toast.style.opacity = "1";
+
+            setTimeout(() => {
+                toast.style.transform = "translate(-50%, -80px)";
+                toast.style.opacity = "0";
+            }, 2000);
+        }
+
+        // --- Core Analysis Logic ---
+
+        async function analyzeText() {
+            const text = document.getElementById('inputText').value;
+            const modelType = document.querySelector('input[name="modelType"]:checked').value;
+            const btn = document.getElementById('analyzeBtn');
+            const resultSection = document.getElementById('resultSection');
+            const errorMsg = document.getElementById('errorMessage');
+            const simMsg = document.getElementById('simMessage');
+            const simBadge = document.getElementById('simBadge');
+
+            errorMsg.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            simMsg.classList.add('hidden');
+
+            if (!text.trim()) {
+                showToast("Please enter text content");
+                document.getElementById('inputText').focus();
+                return;
+            }
+
+            // Loading State
+            const originalBtnContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<div class="loader mr-2"></div> Processing...`;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000); 
+
+                const response = await fetch('http://127.0.0.1:8000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, model_type: modelType }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error(`Server error`);
+
+                const data = await response.json();
+                simBadge.classList.add('hidden');
+                displayResult(data);
+
+            } catch (error) {
+                console.warn('Switching to simulation mode');
+                const mockData = simulateBackend(text, modelType);
+                simMsg.classList.remove('hidden');
+                simBadge.classList.remove('hidden');
+                displayResult(mockData);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
+            }
+        }
+
+        function simulateBackend(text, modelType) {
+            const lowerText = text.toLowerCase();
+            const positiveWords = ['good', 'great', 'love', 'best', 'happy', 'amazing', 'fantastic'];
+            const negativeWords = ['bad', 'hate', 'worst', 'terrible', 'awful', 'sad', 'poor'];
+            
+            let score = 0;
+            positiveWords.forEach(w => { if(lowerText.includes(w)) score++; });
+            negativeWords.forEach(w => { if(lowerText.includes(w)) score--; });
+
+            let prediction = "Positive";
+            let confidence = 0.6 + (Math.random() * 0.35);
+
+            if (score < 0) prediction = "Negative";
+            else if (score === 0) {
+                prediction = Math.random() > 0.5 ? "Positive" : "Negative";
+                confidence = 0.55;
+            }
+
+            return {
+                text: text,
+                model_used: modelType === 'lr' ? "Logistic Regression" : "Naive Bayes",
+                prediction: prediction,
+                confidence: confidence
+            };
+        }
+
+        function displayResult(data) {
+            const resultSection = document.getElementById('resultSection');
+            const predictionDisplay = document.getElementById('predictionDisplay');
+            const modelUsedDisplay = document.getElementById('modelUsedDisplay');
+            const confidenceBar = document.getElementById('confidenceBar');
+            const confidenceValue = document.getElementById('confidenceValue');
+
+            resultSection.classList.remove('hidden');
+            
+            predictionDisplay.textContent = data.prediction;
+            modelUsedDisplay.textContent = data.model_used;
+
+            let conf = data.confidence ? Math.round(data.confidence * 100) : 0;
+            confidenceValue.textContent = conf + "%";
+            confidenceBar.style.width = conf + "%";
+
+            const pred = String(data.prediction).toLowerCase();
+            const isPos = pred.includes('pos') || pred === '1';
+            const isNeg = pred.includes('neg') || pred === '0';
+
+            if (isPos) {
+                predictionDisplay.className = "text-xl font-bold text-green-500";
+                confidenceBar.className = "bg-green-500 h-1.5 rounded-full";
+            } else if (isNeg) {
+                predictionDisplay.className = "text-xl font-bold text-red-500";
+                confidenceBar.className = "bg-red-500 h-1.5 rounded-full";
+            } else {
+                predictionDisplay.className = "text-xl font-bold text-blue-500";
+                confidenceBar.className = "bg-blue-500 h-1.5 rounded-full";
+            }
+        }
+    </script>
+</body>
+</html>
